@@ -16,6 +16,7 @@ jobs:
     uses: ./.github/workflows/_tf_plan.yml
     with:
       environment: "sandbox"
+    secrets: inherit
 
   approve:
     needs: [plan]
@@ -31,3 +32,4 @@ jobs:
     uses: ./.github/workflows/_tf_apply.yml
     with:
       environment: "sandbox"
+    secrets: inherit
