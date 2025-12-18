@@ -1,5 +1,5 @@
 resource "aws_s3_bucket" "state" {
-  bucket        = "${var.aws_account_id}-telegram-bot-bootstrap"
+  bucket        = "telegram-bot-bootstrap-${var.aws_account_id}"
   force_destroy = false
 }
 

@@ -1,16 +1,16 @@
 import {
   to = aws_s3_bucket.state
-  id = "${var.aws_account_id}-telegram-bot-bootstrap"
+  id = "telegram-bot-bootstrap-${var.aws_account_id}"
 }
 
 import {
   to = aws_s3_bucket_public_access_block.state
-  id = "${var.aws_account_id}-telegram-bot-bootstrap"
+  id = "telegram-bot-bootstrap-${var.aws_account_id}"
 }
 
 import {
   to = aws_s3_bucket_versioning.state
-  id = "${var.aws_account_id}-telegram-bot-bootstrap"
+  id = "telegram-bot-bootstrap-${var.aws_account_id}"
 }
 
 import {
