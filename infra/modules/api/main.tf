@@ -128,3 +128,16 @@ resource "aws_api_gateway_stage" "this" {
     aws_api_gateway_account.this,
   ]
 }
+
+resource "aws_api_gateway_method_settings" "this" {
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  stage_name  = aws_api_gateway_stage.this.stage_name
+  method_path = "*/*"
+
+  settings {
+    logging_level          = "INFO"
+    metrics_enabled        = true
+    throttling_rate_limit  = 20
+    throttling_burst_limit = 10
+  }
+}
