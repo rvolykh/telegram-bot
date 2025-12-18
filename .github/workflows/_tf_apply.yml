@@ -1,0 +1,48 @@
+name: "Terraform Apply"
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: "Environment to apply"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+  actions: write
+
+jobs:
+  terraform-apply:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v6
+      - name: "Install dependencies"
+        uses: ./.github/actions/dependencies
+      - name: "Download plan"
+        uses: actions/cache/restore@v4
+        with:
+          key: ${{ github.run_id }}-plan
+          path: infra
+      - name: "Configure AWS credentials"
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/bootstrap/github-telegram-bot
+          role-session-name: github-actions-${{ github.run_id }}
+          aws-region: ${{ secrets.AWS_REGION }}
+      - name: "🚀 Apply"
+        working-directory: infra
+        run: terraform apply plan.out
+      - name: "Clean cache"
+        run: |
+          ## Setting this to not fail the workflow while deleting cache keys.
+          set +e
+          echo "Deleting caches..."
+          gh cache delete --all
+          echo "Done"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}

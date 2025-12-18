@@ -1,0 +1,50 @@
+name: "Terraform Plan"
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: "Environment to plan"
+        required: true
+        type: string
+      enabled_cache_plan:
+        description: "Enable cache for the plan"
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  terraform-plan:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v6
+      - name: "Install dependencies"
+        uses: ./.github/actions/dependencies
+      - name: "Configure AWS credentials"
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/bootstrap/github-telegram-bot
+          role-session-name: github-actions-${{ github.run_id }}
+          aws-region: ${{ secrets.AWS_REGION }}
+      - name: "Init"
+        working-directory: infra
+        run: terraform init
+      - name: "🚀 Plan"
+        working-directory: infra
+        env:
+          TF_VAR_telegram_bot_api_token: ${{ secrets.TELEGRAM_BOT_API_TOKEN }}
+          TF_VAR_alerting_telegram_chat_id: ${{ secrets.ALERTING_TELEGRAM_CHAT_ID }}
+          TF_VAR_alerting_emails: ${{ secrets.ALERTING_EMAILS }}
+        run: terraform plan -out=plan.out
+      - name: "Save plan"
+        if: inputs.enabled_cache_plan
+        uses: actions/cache/save@v4
+        with:
+          key: ${{ github.run_id }}-plan
+          path: infra

@@ -1,0 +1,67 @@
+name: "Validate"
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  id-token: write
+  security-events: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v6
+
+      - name: "Install dependencies"
+        uses: ./.github/actions/dependencies
+
+      - name: "🐹 Go"
+        working-directory: apps
+        run: |
+          set -e
+
+          for d in $(ls -1); do
+            cd $d
+            echo "$d:"
+            echo -e "  fmt:\033[0;31m"
+              test -z "$(go fmt ./... | tee /dev/stderr)"
+            echo -e "\033[0;32m    pass\033[0m"
+            echo -e "  vet:\033[0;31m"
+              go vet ./...
+            echo -e "\033[0;32m    pass\033[0m"
+            cd ..
+          done
+
+      - name: "☁️ Terraform"
+        working-directory: infra
+        run: |
+          echo "Terraform init"
+          terraform init -backend=false
+
+          echo "Terraform validate"
+          terraform validate
+
+      - name: "🚥 Checkov"
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          output_format: cli,sarif
+          output_file_path: console,results.sarif
+
+      - name: Upload SARIF file
+        uses: github/codeql-action/upload-sarif@v2
+        if: success() || failure()
+        with:
+          sarif_file: results.sarif
+
+  terraform-plan:
+    concurrency: "sandbox"
+    needs: [validate]
+    uses: ./.github/workflows/_tf_plan.yml
+    with:
+      environment: "sandbox"
+      enabled_cache_plan: false

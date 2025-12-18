@@ -1,0 +1,33 @@
+name: "Infra"
+concurrency: "sandbox"
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  id-token: write
+  actions: write
+
+jobs:
+  plan:
+    uses: ./.github/workflows/_tf_plan.yml
+    with:
+      environment: "sandbox"
+
+  approve:
+    needs: [plan]
+    runs-on: ubuntu-latest
+    environment: "approve"
+    steps:
+      - name: "Approve"
+        run: |
+          echo "Approved"
+
+  apply:
+    needs: [approve]
+    uses: ./.github/workflows/_tf_apply.yml
+    with:
+      environment: "sandbox"

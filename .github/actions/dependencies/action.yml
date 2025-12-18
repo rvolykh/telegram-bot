@@ -1,0 +1,15 @@
+name: 'Install dependencies'
+description: 'Install dependencies'
+
+runs:
+  using: "composite"
+  steps:
+    - name: "Set up Go"
+      uses: actions/setup-go@v6
+      with:
+        go-version: '1.25'
+
+    - name: "Set up Terraform"
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: '~1.14.0'

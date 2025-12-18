@@ -1,0 +1,11 @@
+.vscode/
+.idea/
+.terraform.d/
+.terraform/
+
+*.tfstate
+*.tfstate.*
+*.zip
+*.lock.hcl
+*.tfvars
+/apps/*/bootstrap
