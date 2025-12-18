@@ -25,7 +25,7 @@ This has to be applied manually, see [bootstrap](./bootstrap/).
 
 ### GitHub Actions
 
-See, [.github/README.md](./.github/README.md).
+See, [.github/setup.md](./.github/setup.md).
 
 ## Deployment
 
