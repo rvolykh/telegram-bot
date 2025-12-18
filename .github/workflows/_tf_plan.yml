@@ -34,7 +34,13 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
       - name: "Init"
         working-directory: infra
-        run: terraform init
+        env:
+          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+        run: |
+          terraform init \
+            -backend-config="bucket=${AWS_ACCOUNT_ID}-telegram-bot-bootstrap" \
+            -backend-config="region=${AWS_REGION}"
       - name: "🚀 Plan"
         working-directory: infra
         env:
