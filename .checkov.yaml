@@ -1,0 +1,21 @@
+skip-check:
+  # CKV
+  - CKV_AWS_18 # INFO "Ensure the S3 bucket has access logging enabled"
+  - CKV_AWS_59 # LOW "Ensure there is no open access to back-end resources through API"
+  - CKV_AWS_109 # LOW "Ensure IAM policies does not allow permissions management / resource exposure without constraints"
+  - CKV_AWS_111 # LOW "Ensure IAM policies does not allow write access without constraints"
+  - CKV_AWS_116 # LOW "Ensure that AWS Lambda function is configured for a Dead Letter Queue(DLQ)"
+  - CKV_AWS_117 # LOW "Ensure that AWS Lambda function is configured inside a VPC"
+  - CKV_AWS_120 # LOW "Ensure API Gateway caching is enabled"
+  - CKV_AWS_144 # LOW "Ensure that S3 bucket has cross-region replication enabled"
+  - CKV_AWS_158 # LOW "Ensure that CloudWatch Log Group is encrypted by KMS"
+  - CKV_AWS_225 # LOW "Ensure API Gateway method setting caching is enabled"
+  - CKV_AWS_272 # HIGH "Ensure AWS Lambda function is configured to validate code-signing"
+  - CKV_AWS_283 # HIGH "Ensure no IAM policies documents allow ALL or any AWS principal permissions to the resource"
+  - CKV_AWS_337 # HIGH "Ensure SSM parameters are using KMS CMK"
+  - CKV_AWS_338 # INFO "Ensure CloudWatch log groups retains logs for at least 1 year"
+  - CKV_AWS_356 # HIGH "Ensure no IAM policies documents allow "*" as a statement's resource for restrictable actions"
+  # CKV2
+  - CKV2_AWS_29 # MEDIUM "Ensure public API gateway are protected by WAF"
+  - CKV2_AWS_51 # LOW "Ensure AWS API Gateway endpoints uses client certificate authentication"
+  - CKV2_AWS_73 # INFO "Ensure AWS SQS uses CMK not AWS default keys for encryption"

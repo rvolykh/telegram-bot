@@ -1,9 +1,10 @@
 resource "aws_sqs_queue" "webhook" {
-  name                        = "${var.api_name}-webhook.fifo"
-  fifo_queue                  = true
-  content_based_deduplication = true
-
-  tags = var.tags
+  name                              = "${var.api_name}-webhook.fifo"
+  fifo_queue                        = true
+  content_based_deduplication       = true
+  kms_master_key_id                 = "alias/aws/sqs"
+  kms_data_key_reuse_period_seconds = 3600
+  tags                              = var.tags
 }
 
 resource "aws_api_gateway_rest_api" "this" {
@@ -11,6 +12,10 @@ resource "aws_api_gateway_rest_api" "this" {
 
   endpoint_configuration {
     types = ["REGIONAL"]
+  }
+
+  lifecycle {
+    create_before_destroy = true
   }
 
   tags = var.tags
@@ -28,10 +33,18 @@ resource "aws_api_gateway_resource" "webhook" {
 }
 
 resource "aws_api_gateway_method" "webhook" {
-  rest_api_id   = aws_api_gateway_rest_api.this.id
-  resource_id   = aws_api_gateway_resource.webhook.id
-  http_method   = "POST"
-  authorization = "NONE"
+  rest_api_id          = aws_api_gateway_rest_api.this.id
+  resource_id          = aws_api_gateway_resource.webhook.id
+  http_method          = "POST"
+  authorization        = "NONE"
+  request_validator_id = aws_api_gateway_request_validator.webhook.id
+}
+
+resource "aws_api_gateway_request_validator" "webhook" {
+  rest_api_id                 = aws_api_gateway_rest_api.this.id
+  name                        = "${var.api_name}-webhook-request"
+  validate_request_body       = false
+  validate_request_parameters = false
 }
 
 resource "aws_api_gateway_integration" "sqs" {
@@ -110,9 +123,10 @@ resource "aws_api_gateway_deployment" "this" {
 }
 
 resource "aws_api_gateway_stage" "this" {
-  deployment_id = aws_api_gateway_deployment.this.id
-  rest_api_id   = aws_api_gateway_rest_api.this.id
-  stage_name    = local.stage_v1
+  deployment_id        = aws_api_gateway_deployment.this.id
+  rest_api_id          = aws_api_gateway_rest_api.this.id
+  stage_name           = local.stage_v1
+  xray_tracing_enabled = true
 
   access_log_settings {
     destination_arn = aws_cloudwatch_log_group.access_logs.arn
@@ -127,4 +141,17 @@ resource "aws_api_gateway_stage" "this" {
     // Wait for the API Gateway account to be created
     aws_api_gateway_account.this,
   ]
+}
+
+resource "aws_api_gateway_method_settings" "this" {
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  stage_name  = aws_api_gateway_stage.this.stage_name
+  method_path = "*/*"
+
+  settings {
+    logging_level          = "INFO"
+    metrics_enabled        = true
+    throttling_rate_limit  = 20
+    throttling_burst_limit = 10
+  }
 }
