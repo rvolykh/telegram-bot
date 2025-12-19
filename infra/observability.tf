@@ -35,10 +35,11 @@ resource "aws_cloudwatch_metric_alarm" "non_empty_dlq" {
 module "telegram_bot_alerting" {
   source = "./modules/alerting"
 
-  name                         = "telegram-bot-alerting"
-  emails                       = var.alerting_emails
-  telegram_chat_id             = var.alerting_telegram_chat_id
-  ssm_param_telegram_api_token = module.telegram_bot_api_token.name
+  name                           = "telegram-bot-alerting"
+  reserved_concurrent_executions = 2
+  emails                         = var.alerting_emails
+  telegram_chat_id               = var.alerting_telegram_chat_id
+  ssm_param_telegram_api_token   = module.telegram_bot_api_token.name
   role_policies = [
     // policy 0
     [

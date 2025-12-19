@@ -9,8 +9,9 @@ module "telegram_bot_queue_cmd_poweron" {
 module "telegram_bot_cmd_poweron" {
   source = "./modules/handler"
 
-  function_name = "telegram-bot-cmd-poweron"
-  source_path   = "${path.root}/../apps/poweron"
+  function_name                  = "telegram-bot-cmd-poweron"
+  reserved_concurrent_executions = 3
+  source_path                    = "${path.root}/../apps/poweron"
 
   sqs_batch_size = 10
   sqs_queue_arn  = module.telegram_bot_queue_cmd_poweron.sqs_queue_arn

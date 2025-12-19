@@ -7,7 +7,7 @@ resource "aws_lambda_function" "this" {
   runtime                        = "provided.al2023"
   timeout                        = var.timeout
   memory_size                    = var.memory_size
-  reserved_concurrent_executions = 10
+  reserved_concurrent_executions = var.reserved_concurrent_executions
 
   environment {
     variables = var.environment_variables
