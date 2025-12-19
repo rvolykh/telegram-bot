@@ -1,6 +1,7 @@
 resource "aws_sns_topic" "emails" {
-  name = "${var.name}-fallback-to-emails"
-  tags = var.tags
+  name              = "${var.name}-fallback-to-emails"
+  kms_master_key_id = "alias/aws/sns"
+  tags              = var.tags
 }
 
 resource "aws_sns_topic_subscription" "emails" {

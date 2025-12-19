@@ -14,6 +14,21 @@ import {
 }
 
 import {
+  to = aws_s3_bucket_lifecycle_configuration.state
+  id = "telegram-bot-bootstrap-${var.aws_account_id}"
+}
+
+import {
+  to = aws_s3_bucket_notification.state
+  id = "telegram-bot-bootstrap-${var.aws_account_id}"
+}
+
+import {
+  to = aws_s3_bucket_server_side_encryption_configuration.state
+  id = "telegram-bot-bootstrap-${var.aws_account_id}"
+}
+
+import {
   to = aws_iam_openid_connect_provider.github
   id = "arn:aws:iam::${var.aws_account_id}:oidc-provider/token.actions.githubusercontent.com"
 }
