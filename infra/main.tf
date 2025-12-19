@@ -43,7 +43,7 @@ module "telegram_bot_handler_mux" {
   source = "./modules/handler"
 
   function_name                  = "telegram-bot-mux"
-  reserved_concurrent_executions = 3
+  reserved_concurrent_executions = -1
   source_path                    = "${path.root}/../apps/mux"
 
   sqs_batch_size = 10
