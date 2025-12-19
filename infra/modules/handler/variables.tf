@@ -3,6 +3,11 @@ variable "function_name" {
   type        = string
 }
 
+variable "reserved_concurrent_executions" {
+  description = "Reserved concurrent executions for the Lambda function"
+  type        = number
+}
+
 variable "source_path" {
   description = "Path to the directory containing main.go (the module will build the binary and create a ZIP)"
   type        = string

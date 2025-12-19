@@ -3,6 +3,11 @@ variable "name" {
   type        = string
 }
 
+variable "reserved_concurrent_executions" {
+  description = "Reserved concurrent executions for the Lambda function"
+  type        = number
+}
+
 variable "emails" {
   description = "Emails to subscribe to the SNS topic"
   type        = list(string)

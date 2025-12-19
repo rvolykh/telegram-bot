@@ -42,8 +42,9 @@ module "telegram_bot_api" {
 module "telegram_bot_handler_mux" {
   source = "./modules/handler"
 
-  function_name = "telegram-bot-mux"
-  source_path   = "${path.root}/../apps/mux"
+  function_name                  = "telegram-bot-mux"
+  reserved_concurrent_executions = 3
+  source_path                    = "${path.root}/../apps/mux"
 
   sqs_batch_size = 10
   sqs_queue_arn  = module.telegram_bot_queue_mux.sqs_queue_arn

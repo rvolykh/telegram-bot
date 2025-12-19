@@ -7,7 +7,7 @@ resource "aws_lambda_function" "telegram" {
   runtime                        = "provided.al2023"
   timeout                        = 10
   memory_size                    = 128
-  reserved_concurrent_executions = 10
+  reserved_concurrent_executions = var.reserved_concurrent_executions
 
   environment {
     variables = {
