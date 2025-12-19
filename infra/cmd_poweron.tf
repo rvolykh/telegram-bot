@@ -10,7 +10,7 @@ module "telegram_bot_cmd_poweron" {
   source = "./modules/handler"
 
   function_name                  = "telegram-bot-cmd-poweron"
-  reserved_concurrent_executions = 3
+  reserved_concurrent_executions = -1
   source_path                    = "${path.root}/../apps/poweron"
 
   sqs_batch_size = 10

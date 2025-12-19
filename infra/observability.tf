@@ -36,7 +36,7 @@ module "telegram_bot_alerting" {
   source = "./modules/alerting"
 
   name                           = "telegram-bot-alerting"
-  reserved_concurrent_executions = 2
+  reserved_concurrent_executions = -1
   emails                         = var.alerting_emails
   telegram_chat_id               = var.alerting_telegram_chat_id
   ssm_param_telegram_api_token   = module.telegram_bot_api_token.name
