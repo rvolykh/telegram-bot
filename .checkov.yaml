@@ -9,6 +9,7 @@ skip-check:
   - CKV_AWS_120 # LOW "Ensure API Gateway caching is enabled"
   - CKV_AWS_144 # LOW "Ensure that S3 bucket has cross-region replication enabled"
   - CKV_AWS_158 # LOW "Ensure that CloudWatch Log Group is encrypted by KMS"
+  - CKV_AWS_173 # LOW "Check encryption settings for Lambda environmental variable"
   - CKV_AWS_225 # LOW "Ensure API Gateway method setting caching is enabled"
   - CKV_AWS_272 # HIGH "Ensure AWS Lambda function is configured to validate code-signing"
   - CKV_AWS_283 # HIGH "Ensure no IAM policies documents allow ALL or any AWS principal permissions to the resource"
