@@ -1,7 +1,7 @@
 module "telegram_bot_queue_alerting" {
   source = "./modules/queue"
 
-  queue_name = "telegram-bot-alerting"
+  queue_name = "${var.prefix}telegram-bot-alerting"
 
   enable_dead_letter_queue = false
   dead_letter_queue_source_arns = [
@@ -11,7 +11,7 @@ module "telegram_bot_queue_alerting" {
 }
 
 resource "aws_cloudwatch_metric_alarm" "non_empty_dlq" {
-  alarm_name          = "telegram-bot-non-empty-dlq"
+  alarm_name          = "${var.prefix}telegram-bot-non-empty-dlq"
   comparison_operator = "GreaterThanOrEqualToThreshold"
   evaluation_periods  = 1
   period              = 5 * 60
@@ -35,7 +35,7 @@ resource "aws_cloudwatch_metric_alarm" "non_empty_dlq" {
 module "telegram_bot_alerting" {
   source = "./modules/alerting"
 
-  name                           = "telegram-bot-alerting"
+  name                           = "${var.prefix}telegram-bot-alerting"
   reserved_concurrent_executions = -1
   emails                         = var.alerting_emails
   telegram_chat_id               = var.alerting_telegram_chat_id

@@ -26,3 +26,11 @@ jobs:
       environment: "sandbox"
       enabled_cache_plan: false
     secrets: inherit
+
+  terraform-test:
+    if: github.event_name == 'pull_request'
+    needs: [terraform-plan]
+    uses: ./.github/workflows/_tf_test.yml
+    with:
+      environment: "sandbox"
+    secrets: inherit
