@@ -24,6 +24,12 @@ variable "sqs_queue" {
   }
 }
 
+variable "ip_allowlist" {
+  description = "IP addresses to allow access to the API"
+  type        = list(string)
+  default     = []
+}
+
 variable "tags" {
   description = "Tags to apply to the API Gateway and SQS resources"
   type        = map(string)

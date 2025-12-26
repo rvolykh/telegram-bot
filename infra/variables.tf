@@ -4,6 +4,18 @@ variable "telegram_bot_api_token" {
   sensitive   = true
 }
 
+variable "prefix" {
+  description = "Prefix to use for the resources"
+  type        = string
+  default     = ""
+}
+
+variable "api_ip_allowlist" {
+  description = "IP addresses to allow access to the API"
+  type        = list(string)
+  default     = []
+}
+
 variable "alerting_telegram_chat_id" {
   description = "Telegram chat ID to send alerts to"
   type        = string

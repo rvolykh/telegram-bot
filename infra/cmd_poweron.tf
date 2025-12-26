@@ -1,7 +1,7 @@
 module "telegram_bot_queue_cmd_poweron" {
   source = "./modules/queue"
 
-  queue_name               = "telegram-bot-cmd-poweron"
+  queue_name               = "${var.prefix}telegram-bot-cmd-poweron"
   enable_dead_letter_queue = true
   dead_letter_queue_arn    = module.telegram_bot_queue_alerting.sqs_queue_arn
 }
@@ -9,7 +9,7 @@ module "telegram_bot_queue_cmd_poweron" {
 module "telegram_bot_cmd_poweron" {
   source = "./modules/handler"
 
-  function_name                  = "telegram-bot-cmd-poweron"
+  function_name                  = "${var.prefix}telegram-bot-cmd-poweron"
   reserved_concurrent_executions = -1
   source_path                    = "${path.root}/../apps/poweron"
 

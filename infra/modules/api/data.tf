@@ -46,7 +46,7 @@ data "aws_iam_policy_document" "api_gateway_policy" {
     condition {
       test     = "NotIpAddress"
       variable = "aws:SourceIp"
-      values = [
+      values = concat([
         "91.108.56.0/22",
         "91.108.4.0/22",
         "91.108.8.0/22",
@@ -61,7 +61,7 @@ data "aws_iam_policy_document" "api_gateway_policy" {
         "2001:67c:4e8::/48",
         "2001:b28:f23c::/48",
         "2a0a:f280::/32",
-      ]
+      ], var.ip_allowlist)
     }
   }
 }

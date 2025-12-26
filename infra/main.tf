@@ -1,14 +1,14 @@
 module "telegram_bot_queue_mux" {
   source = "./modules/queue"
 
-  queue_name = "telegram-bot-mux"
+  queue_name = "${var.prefix}telegram-bot-mux"
 
   enable_dead_letter_queue = true
   dead_letter_queue_arn    = module.telegram_bot_queue_alerting.sqs_queue_arn
 }
 
 resource "aws_cloudwatch_metric_alarm" "mux_command_rate" {
-  alarm_name          = "telegram-bot-mux-command-rate"
+  alarm_name          = "${var.prefix}telegram-bot-mux-command-rate"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 3  # over 3 minutes
   period              = 60 # 1 minute
@@ -32,17 +32,18 @@ resource "aws_cloudwatch_metric_alarm" "mux_command_rate" {
 module "telegram_bot_api" {
   source = "./modules/api"
 
-  api_name = "telegram-bot"
+  api_name = "${var.prefix}telegram-bot"
   sqs_queue = {
     name = module.telegram_bot_queue_mux.sqs_queue_name
     arn  = module.telegram_bot_queue_mux.sqs_queue_arn
   }
+  ip_allowlist = var.api_ip_allowlist
 }
 
 module "telegram_bot_handler_mux" {
   source = "./modules/handler"
 
-  function_name                  = "telegram-bot-mux"
+  function_name                  = "${var.prefix}telegram-bot-mux"
   reserved_concurrent_executions = -1
   source_path                    = "${path.root}/../apps/mux"
 
