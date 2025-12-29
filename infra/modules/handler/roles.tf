@@ -15,19 +15,24 @@ resource "aws_iam_role" "lambda_execution" {
   })
 }
 
-resource "aws_iam_role_policy_attachment" "lambda_basic_execution" {
-  role       = aws_iam_role.lambda_execution.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
-}
-
-resource "aws_iam_role_policy" "sqs" {
-  name = "${var.function_name}-sqs-policy"
+resource "aws_iam_role_policy" "lambda_exec_required_perm" {
+  name = "${var.function_name}-required"
   role = aws_iam_role.lambda_execution.id
 
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
       {
+        Sid    = "Logging",
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogStream",
+          "logs:PutLogEvents",
+        ]
+        Resource = "arn:aws:logs:*:*:log-group:/aws/lambda/${var.function_name}:log-stream:*"
+      },
+      {
+        Sid    = "SQS"
         Effect = "Allow"
         Action = [
           "sqs:ReceiveMessage",

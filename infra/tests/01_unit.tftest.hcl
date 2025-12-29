@@ -175,7 +175,7 @@ run "verify_module_handler_negative" {
     source_path                    = "../../apps/mux"
     sqs_queue_arn                  = "arn:aws:sqs:000000000000:us-east-1:${run.prepare.prefix}queue.fifo"
     sqs_batch_size                 = 10
-    role_policies                  = [["1"], ["2"], ["3"], ["4"], ["5"], ["6"], ["7"], ["8"], ["9"]]
+    role_policies                  = [["1"], ["2"], ["3"], ["4"], ["5"], ["6"], ["7"], ["8"], ["9"], ["10"], ["11"]]
   }
 
   expect_failures = [var.role_policies]
@@ -205,7 +205,7 @@ run "verify_module_alerting_negative" {
   variables {
     name                           = "${run.prepare.prefix}alerting-negative"
     reserved_concurrent_executions = 1
-    role_policies                  = [["1"], ["2"], ["3"], ["4"], ["5"], ["6"], ["7"], ["8"], ["9"]]
+    role_policies                  = [["1"], ["2"], ["3"], ["4"], ["5"], ["6"], ["7"], ["8"], ["9"], ["10"]]
   }
 
   expect_failures = [var.role_policies]

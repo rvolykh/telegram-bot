@@ -6,16 +6,48 @@ data "aws_iam_policy_document" "cloudwatch_permissions" {
   statement {
     effect = "Allow"
     actions = [
-      "logs:CreateLogGroup",
-      "logs:CreateLogStream",
       "logs:DescribeLogGroups",
-      "logs:DescribeLogStreams",
-      "logs:PutLogEvents",
-      "logs:GetLogEvents",
-      "logs:FilterLogEvents"
     ]
     resources = [
       "*",
+    ]
+  }
+
+  statement {
+    effect = "Allow"
+    actions = [
+      "logs:CreateLogGroup",
+      "logs:DeleteLogGroup",
+    ]
+    resources = [
+      "arn:aws:logs:*:*:log-group:/aws/apigateway/welcome:*"
+    ]
+  }
+
+  statement {
+    effect = "Allow"
+    actions = [
+      "logs:DescribeLogStreams",
+      "logs:FilterLogEvents"
+    ]
+    resources = [
+      "arn:aws:logs:*:*:log-group:/aws/apigateway/welcome:*",
+      aws_cloudwatch_log_group.access_logs.arn,
+      aws_cloudwatch_log_group.stage_v1.arn,
+    ]
+  }
+
+  statement {
+    effect = "Allow"
+    actions = [
+      "logs:CreateLogStream",
+      "logs:PutLogEvents",
+      "logs:GetLogEvents",
+    ]
+    resources = [
+      "arn:aws:logs:*:*:log-group:/aws/apigateway/welcome:*",
+      aws_cloudwatch_log_group.access_logs.arn,
+      aws_cloudwatch_log_group.stage_v1.arn,
     ]
   }
 }
