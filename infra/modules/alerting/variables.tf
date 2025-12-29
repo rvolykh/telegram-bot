@@ -35,8 +35,8 @@ variable "role_policies" {
   default     = []
 
   validation {
-    condition     = length(var.role_policies) <= 8
-    error_message = "role_policies must be less than 9 policies"
+    condition     = length(var.role_policies) <= 9
+    error_message = "role_policies must be less than 10 policies"
   }
 }
 

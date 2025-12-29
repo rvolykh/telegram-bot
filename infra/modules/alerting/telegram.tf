@@ -56,9 +56,24 @@ resource "aws_iam_role" "lambda_execution" {
   tags = var.tags
 }
 
-resource "aws_iam_role_policy_attachment" "lambda_basic_execution" {
-  role       = aws_iam_role.lambda_execution.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+resource "aws_iam_role_policy" "lambda_exec_required_perm" {
+  name = "${var.name}-required"
+  role = aws_iam_role.lambda_execution.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "Logging",
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogStream",
+          "logs:PutLogEvents",
+        ]
+        Resource = "arn:aws:logs:*:*:log-group:/aws/lambda/${var.name}:log-stream:*"
+      }
+    ]
+  })
 }
 
 resource "aws_iam_role_policy" "fallback_to_sns" {
