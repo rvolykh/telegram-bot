@@ -8,7 +8,7 @@ runs:
       uses: actions/setup-go@v6
       with:
         go-version: '1.25'
-
+        cache-dependency-path: "apps/*/go.sum"
     - name: "Set up Terraform"
       uses: hashicorp/setup-terraform@v3
       with:
