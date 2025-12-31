@@ -20,7 +20,7 @@ data "aws_iam_policy_document" "cloudwatch_permissions" {
       "logs:DeleteLogGroup",
     ]
     resources = [
-      "arn:aws:logs:*:*:log-group:/aws/apigateway/welcome:*"
+      "arn:aws:logs:*:*:log-group:/aws/apigateway/welcome"
     ]
   }
 
@@ -31,7 +31,7 @@ data "aws_iam_policy_document" "cloudwatch_permissions" {
       "logs:FilterLogEvents"
     ]
     resources = [
-      "arn:aws:logs:*:*:log-group:/aws/apigateway/welcome:*",
+      "arn:aws:logs:*:*:log-group:/aws/apigateway/welcome",
       aws_cloudwatch_log_group.access_logs.arn,
       aws_cloudwatch_log_group.stage_v1.arn,
     ]
@@ -45,9 +45,9 @@ data "aws_iam_policy_document" "cloudwatch_permissions" {
       "logs:GetLogEvents",
     ]
     resources = [
-      "arn:aws:logs:*:*:log-group:/aws/apigateway/welcome:*",
-      aws_cloudwatch_log_group.access_logs.arn,
-      aws_cloudwatch_log_group.stage_v1.arn,
+      "arn:aws:logs:*:*:log-group:/aws/apigateway/welcome:log-stream:*",
+      "${aws_cloudwatch_log_group.access_logs.arn}:log-stream:*",
+      "${aws_cloudwatch_log_group.stage_v1.arn}:log-stream:*",
     ]
   }
 }
