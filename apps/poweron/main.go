@@ -5,28 +5,20 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"net/http"
-	"os"
-	"strings"
-	"time"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-)
-
-const (
-	PowerScheduleCacheTTL      = 5 * time.Minute
-	TelegramAPIToken           = "TELEGRAM_APITOKEN"
-	SSMParamTelegramAPIToken   = "SSM_PARAM_TELEGRAM_APITOKEN"
-	SSMParamPowerScheduleCache = "SSM_PARAM_POWERON_CACHE"
+	"github.com/rvolykh/telegram-bot/apps/poweron/config"
+	"github.com/rvolykh/telegram-bot/apps/poweron/operations"
+	"github.com/rvolykh/telegram-bot/apps/poweron/reply"
 )
 
 type LambdaFunction struct {
 	SSMClient *ssm.Client
+	Config    config.Config
 }
 
 func (f *LambdaFunction) Handler(ctx context.Context, sqsEvent events.SQSEvent) error {
@@ -36,14 +28,10 @@ func (f *LambdaFunction) Handler(ctx context.Context, sqsEvent events.SQSEvent) 
 	if err != nil {
 		return fmt.Errorf("failed to get API token: %w", err)
 	}
-	bot, err := tgbotapi.NewBotAPI(apiToken)
-	if err != nil {
-		return fmt.Errorf("failed to create bot: %w", err)
-	}
 
-	schedule, err := f.getPowerSchedule(ctx)
+	telegram, err := reply.NewTelegram(apiToken)
 	if err != nil {
-		return fmt.Errorf("failed to get power on: %w", err)
+		return fmt.Errorf("failed to create telegram: %w", err)
 	}
 
 	for i, record := range sqsEvent.Records {
@@ -59,9 +47,6 @@ func (f *LambdaFunction) Handler(ctx context.Context, sqsEvent events.SQSEvent) 
 			continue
 		}
 
-		log.Printf("Parsed Telegram Update:")
-		log.Printf("  Update ID: %d", update.UpdateID)
-
 		if update.Message == nil {
 			log.Printf("Skipping update: no message")
 			continue
@@ -74,24 +59,80 @@ func (f *LambdaFunction) Handler(ctx context.Context, sqsEvent events.SQSEvent) 
 
 		chatID := update.Message.Chat.ID
 
-		_, err := bot.Send(tgbotapi.NewMessage(chatID, schedule))
-		if err != nil {
-			log.Printf("Error sending message: %v", err)
-			continue
+		args := update.Message.CommandArguments()
+		switch args {
+		case "":
+			err = operations.ShowMainMenu(ctx, telegram, chatID)
+			if err != nil {
+				log.Printf("Error showing main menu: %v", err)
+				continue
+			}
+			log.Printf("Main menu sent to chat: %d", chatID)
+
+		case "Сьогодні":
+			err = operations.Today(ctx, f.Config, telegram, f.SSMClient, chatID)
+			if err != nil {
+				log.Printf("Error showing today schedule: %v", err)
+				continue
+			}
+			log.Printf("Today schedule sent to chat: %d", chatID)
+
+		case "Завтра":
+			err = operations.Tomorrow(ctx, f.Config, telegram, f.SSMClient, chatID)
+			if err != nil {
+				log.Printf("Error showing tomorrow schedule: %v", err)
+				continue
+			}
+			log.Printf("Tomorrow schedule sent to chat: %d", chatID)
+
+		case "Підписатись":
+			err = operations.ShowSelectGroupMenu(ctx, telegram, chatID)
+			if err != nil {
+				log.Printf("Error subscribing: %v", err)
+				continue
+			}
+			log.Printf("Select group menu sent to chat: %d", chatID)
+
+		case "Відписатись":
+			err = operations.Unsubscribe(ctx, f.Config, telegram, f.SSMClient, chatID)
+			if err != nil {
+				log.Printf("Error unsubscribing: %v", err)
+				continue
+			}
+			log.Printf("Unsubscribed from chat: %d", chatID)
+
+		case "Закрити":
+			err = operations.CloseMenu(ctx, telegram, chatID)
+			if err != nil {
+				log.Printf("Error closing menu: %v", err)
+				continue
+			}
+			log.Printf("Closed menu in chat: %d", chatID)
+
+		case "1.1", "1.2", "2.1", "2.2", "3.1", "3.2", "4.1", "4.2", "5.1", "5.2", "6.1", "6.2":
+			err = operations.Subscribe(ctx, f.Config, telegram, f.SSMClient, chatID, args)
+			if err != nil {
+				log.Printf("Error showing group schedule: %v", err)
+				continue
+			}
+			log.Printf("Subscribed to group %s in chat: %d", args, chatID)
+
+		default:
+			log.Printf("Unknown command args: %s", args)
+
 		}
-		log.Printf("Message sent to user: %s", update.FromChat().UserName)
 	}
 
 	return nil
 }
 
 func (f *LambdaFunction) getAPIToken(ctx context.Context) (string, error) {
-	if apiToken, ok := os.LookupEnv(TelegramAPIToken); ok {
-		return apiToken, nil
+	if f.Config.TelegramAPIToken != "" {
+		return f.Config.TelegramAPIToken, nil
 	}
 
 	apiToken, err := f.SSMClient.GetParameter(ctx, &ssm.GetParameterInput{
-		Name:           aws.String(os.Getenv(SSMParamTelegramAPIToken)),
+		Name:           aws.String(f.Config.SSMParamTelegramAPIToken),
 		WithDecryption: aws.Bool(true),
 	})
 	if err != nil {
@@ -100,122 +141,15 @@ func (f *LambdaFunction) getAPIToken(ctx context.Context) (string, error) {
 	return *apiToken.Parameter.Value, nil
 }
 
-func (f *LambdaFunction) getPowerSchedule(ctx context.Context) (string, error) {
-	powerSchedule, err := f.SSMClient.GetParameter(ctx, &ssm.GetParameterInput{
-		Name:           aws.String(os.Getenv(SSMParamPowerScheduleCache)),
-		WithDecryption: aws.Bool(true),
-	})
-	if err != nil {
-		log.Printf("Failed to get power schedule from cache: %v", err)
-	} else {
-		isCacheValid := powerSchedule.Parameter.Value != nil &&
-			*powerSchedule.Parameter.Value != "none" &&
-			powerSchedule.Parameter.LastModifiedDate.After(time.Now().Add(-PowerScheduleCacheTTL))
-
-		if isCacheValid {
-			log.Printf("Power schedule is still valid, returning cached value")
-			return *powerSchedule.Parameter.Value, nil
-		}
-		log.Printf("Power schedule is outdated, refreshing cache")
-	}
-
-	powerScheduleText, err := getPowerSchedule()
-	if err != nil {
-		return "", fmt.Errorf("failed to get power schedule: %w", err)
-	}
-
-	_, err = f.SSMClient.PutParameter(ctx, &ssm.PutParameterInput{
-		Name:      aws.String(os.Getenv(SSMParamPowerScheduleCache)),
-		Value:     aws.String(powerScheduleText),
-		Type:      "SecureString",
-		Overwrite: aws.Bool(true),
-	})
-	if err != nil {
-		log.Printf("Failed to put power schedule to cache: %v", err)
-	} else {
-		log.Printf("Updated power schedule in cache")
-	}
-
-	return powerScheduleText, nil
-}
-
-type PowerOnMenuItem struct {
-	Name          string `json:"name"`
-	RawMobileHTML string `json:"rawMobileHtml"`
-}
-
-type PowerOnMember struct {
-	MenuItems []PowerOnMenuItem `json:"menuItems"`
-}
-
-type PowerOnResponse struct {
-	Member []PowerOnMember `json:"hydra:member"`
-}
-
-func getPowerSchedule() (string, error) {
-	resp, err := http.Get("https://api.loe.lviv.ua/api/menus?page=1&type=photo-grafic")
-	if err != nil {
-		return "", fmt.Errorf("failed to get power on: %w", err)
-	}
-	defer resp.Body.Close()
-
-	var powerOnResponse PowerOnResponse
-	err = json.NewDecoder(resp.Body).Decode(&powerOnResponse)
-	if err != nil {
-		return "", fmt.Errorf("failed to decode power on response: %w", err)
-	}
-
-	if len(powerOnResponse.Member) == 0 {
-		return "", fmt.Errorf("no power on found")
-	}
-	if len(powerOnResponse.Member[0].MenuItems) == 0 {
-		return "", fmt.Errorf("no menu items found")
-	}
-
-	text := cleanHTML(powerOnResponse.Member[0].MenuItems[0].RawMobileHTML)
-	if text == "" {
-		text = "Немає запланованих відключень електроенергії на сьогодні."
-	}
-
-	return text, nil
-}
-
-func cleanHTML(text string) string {
-	var builder strings.Builder
-	builder.Grow(len(text))
-
-	in := false // True if we are inside an HTML tag.
-	start := 0  // The index of the previous start tag character `<`
-	end := 0    // The index of the previous end tag character `>`
-	for i, c := range text {
-		if (i+1) == len(text) && end >= start {
-			builder.WriteString(text[end:])
-		}
-		if c != '<' && c != '>' {
-			continue
-		}
-		if c == '<' {
-			if !in {
-				start = i
-				builder.WriteString(text[end:start])
-			}
-			in = true
-			continue
-		}
-		end, in = i+1, false
-	}
-
-	return builder.String()
-}
-
 func main() {
-	cfg, err := config.LoadDefaultConfig(context.TODO())
+	cfg, err := config.LoadAWSConfig(context.TODO())
 	if err != nil {
-		log.Printf("unable to load SDK config: %v", err)
+		log.Printf("unable to load AWS config: %v", err)
 	}
 
 	fn := &LambdaFunction{
 		SSMClient: ssm.NewFromConfig(cfg),
+		Config:    config.LoadAppConfig(),
 	}
 	lambda.Start(fn.Handler)
 }
