@@ -12,3 +12,8 @@ type PowerOnMember struct {
 type PowerOnResponse struct {
 	Member []PowerOnMember `json:"hydra:member"`
 }
+
+type Schedule struct {
+	Today    string `json:"today"`
+	Tomorrow string `json:"tomorrow"`
+}
