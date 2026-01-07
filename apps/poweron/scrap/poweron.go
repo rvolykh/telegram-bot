@@ -10,6 +10,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
+	"github.com/rvolykh/telegram-bot/apps/poweron/config"
 )
 
 type Poweron struct {
@@ -18,41 +19,51 @@ type Poweron struct {
 	cacheTTL  time.Duration
 }
 
-func NewPoweron(ssmClient *ssm.Client, cacheKey string, cacheTTL time.Duration) *Poweron {
+func NewPoweron(cfg *config.Config) *Poweron {
 	return &Poweron{
-		ssmClient: ssmClient,
-		cacheKey:  cacheKey,
-		cacheTTL:  cacheTTL,
+		ssmClient: ssm.NewFromConfig(cfg.AWSConfig),
+		cacheKey:  cfg.SSMParamCache,
+		cacheTTL:  cfg.PowerScheduleCacheTTL,
 	}
 }
 
-func (p *Poweron) GetPowerSchedule(ctx context.Context) (string, error) {
-	powerSchedule, err := p.ssmClient.GetParameter(ctx, &ssm.GetParameterInput{
+func (p *Poweron) GetPowerSchedule(ctx context.Context) (Schedule, error) {
+	cacheEntry, err := p.ssmClient.GetParameter(ctx, &ssm.GetParameterInput{
 		Name:           aws.String(p.cacheKey),
 		WithDecryption: aws.Bool(true),
 	})
 	if err != nil {
 		log.Printf("Failed to get power schedule from cache: %v", err)
 	} else {
-		isCacheValid := powerSchedule.Parameter.Value != nil &&
-			*powerSchedule.Parameter.Value != "none" &&
-			powerSchedule.Parameter.LastModifiedDate.After(time.Now().Add(-p.cacheTTL))
+		isCacheValid := cacheEntry.Parameter.Value != nil &&
+			*cacheEntry.Parameter.Value != "none" &&
+			cacheEntry.Parameter.LastModifiedDate.After(time.Now().Add(-p.cacheTTL))
 
 		if isCacheValid {
 			log.Printf("Power schedule is still valid, returning cached value")
-			return *powerSchedule.Parameter.Value, nil
+
+			var powerSchedule Schedule
+			if err := json.Unmarshal([]byte(*cacheEntry.Parameter.Value), &powerSchedule); err != nil {
+				return Schedule{}, fmt.Errorf("failed to unmarshal power schedule: %w", err)
+			}
+			return powerSchedule, nil
 		}
 		log.Printf("Power schedule is outdated, refreshing cache")
 	}
 
-	powerScheduleText, err := getPowerSchedule()
+	powerSchedule, err := getPowerSchedule()
 	if err != nil {
-		return "", fmt.Errorf("failed to get power schedule: %w", err)
+		return Schedule{}, fmt.Errorf("failed to get power schedule: %w", err)
+	}
+
+	powerScheduleJSON, err := json.Marshal(powerSchedule)
+	if err != nil {
+		return Schedule{}, fmt.Errorf("failed to marshal power schedule: %w", err)
 	}
 
 	_, err = p.ssmClient.PutParameter(ctx, &ssm.PutParameterInput{
 		Name:      aws.String(p.cacheKey),
-		Value:     aws.String(powerScheduleText),
+		Value:     aws.String(string(powerScheduleJSON)),
 		Type:      "SecureString",
 		Overwrite: aws.Bool(true),
 	})
@@ -62,33 +73,46 @@ func (p *Poweron) GetPowerSchedule(ctx context.Context) (string, error) {
 		log.Printf("Updated power schedule in cache")
 	}
 
-	return powerScheduleText, nil
+	return powerSchedule, nil
 }
 
-func getPowerSchedule() (string, error) {
+func getPowerSchedule() (Schedule, error) {
+	var schedule Schedule
+
 	resp, err := http.Get("https://api.loe.lviv.ua/api/menus?page=1&type=photo-grafic")
 	if err != nil {
-		return "", fmt.Errorf("failed to get power on: %w", err)
+		return schedule, fmt.Errorf("failed to get power on: %w", err)
 	}
 	defer resp.Body.Close()
 
 	var powerOnResponse PowerOnResponse
 	err = json.NewDecoder(resp.Body).Decode(&powerOnResponse)
 	if err != nil {
-		return "", fmt.Errorf("failed to decode power on response: %w", err)
+		return schedule, fmt.Errorf("failed to decode power on response: %w", err)
 	}
 
 	if len(powerOnResponse.Member) == 0 {
-		return "", fmt.Errorf("no power on found")
+		return schedule, fmt.Errorf("no power on found")
 	}
 	if len(powerOnResponse.Member[0].MenuItems) == 0 {
-		return "", fmt.Errorf("no menu items found")
+		return schedule, fmt.Errorf("no menu items found")
 	}
 
-	text := cleanHTML(powerOnResponse.Member[0].MenuItems[0].RawMobileHTML)
-	if text == "" {
-		text = "Немає запланованих відключень електроенергії"
+	for _, menuItem := range powerOnResponse.Member[0].MenuItems {
+		switch menuItem.Name {
+		case "Today":
+			schedule.Today = cleanHTML(menuItem.RawMobileHTML)
+		case "Tomorrow":
+			schedule.Tomorrow = cleanHTML(menuItem.RawMobileHTML)
+		}
 	}
 
-	return text, nil
+	if schedule.Today == "" {
+		schedule.Today = "Немає запланованих відключень електроенергії"
+	}
+	if schedule.Tomorrow == "" {
+		schedule.Tomorrow = "Немає запланованих відключень електроенергії"
+	}
+
+	return schedule, nil
 }

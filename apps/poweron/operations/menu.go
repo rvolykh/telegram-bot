@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/rvolykh/telegram-bot/apps/poweron/config"
 	"github.com/rvolykh/telegram-bot/apps/poweron/reply"
 )
 
@@ -56,26 +57,29 @@ var (
 	keyboardCloseMenu = tgbotapi.NewRemoveKeyboard(true)
 )
 
-func ShowMainMenu(ctx context.Context, t *reply.Telegram, chatID int64) error {
-	err := t.SendMenu(ctx, chatID, "Оберіть операцію", keyboardMainMenu)
+func ShowMainMenu(ctx context.Context, cfg *config.Config, chatID int64) error {
+	t, err := reply.NewTelegram(cfg)
 	if err != nil {
-		return fmt.Errorf("failed to send main menu: %w", err)
+		return fmt.Errorf("failed to create telegram client: %w", err)
 	}
-	return nil
+
+	return t.SendMenu(ctx, chatID, "Оберіть операцію", keyboardMainMenu)
 }
 
-func ShowSelectGroupMenu(ctx context.Context, t *reply.Telegram, chatID int64) error {
-	err := t.SendMenu(ctx, chatID, "Оберіть групу", keyboardGroupsMenu)
+func ShowSelectGroupMenu(ctx context.Context, cfg *config.Config, chatID int64) error {
+	t, err := reply.NewTelegram(cfg)
 	if err != nil {
-		return fmt.Errorf("failed to send select group menu: %w", err)
+		return fmt.Errorf("failed to create telegram client: %w", err)
 	}
-	return nil
+
+	return t.SendMenu(ctx, chatID, "Оберіть групу", keyboardGroupsMenu)
 }
 
-func CloseMenu(ctx context.Context, t *reply.Telegram, chatID int64) error {
-	err := t.SendMenu(ctx, chatID, "Закрито", keyboardCloseMenu)
+func CloseMenu(ctx context.Context, cfg *config.Config, chatID int64) error {
+	t, err := reply.NewTelegram(cfg)
 	if err != nil {
-		return fmt.Errorf("failed to send close menu: %w", err)
+		return fmt.Errorf("failed to create telegram client: %w", err)
 	}
-	return nil
+
+	return t.SendMenu(ctx, chatID, "Закрито", keyboardCloseMenu)
 }
