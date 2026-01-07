@@ -167,6 +167,34 @@ data "aws_iam_policy_document" "github_policy_3" {
       values   = ["bootstrap"]
     }
   }
+
+  statement {
+    sid = "SNS"
+    actions = [
+      "sns:CreateTopic",
+      "sns:DeleteTopic",
+      "sns:GetTopicAttributes",
+      "sns:ListTopics",
+      "sns:ListTagsForResource",
+      "sns:SetTopicAttributes",
+      "sns:TagResource",
+      "sns:UntagResource",
+      "sns:Subscribe",
+      "sns:Unsubscribe",
+      "sns:ListSubscriptions",
+      "sns:ListSubscriptionsByTopic",
+      "sns:GetSubscriptionAttributes",
+      "sns:SetSubscriptionAttributes",
+    ]
+    resources = [
+      "*",
+    ]
+    condition {
+      test     = "StringNotEquals"
+      variable = "aws:ResourceTag/ManagedBy"
+      values   = ["bootstrap"]
+    }
+  }
 }
 
 data "aws_iam_policy_document" "github_policy_4" {
@@ -212,6 +240,28 @@ data "aws_iam_policy_document" "github_policy_4" {
   }
 
   statement {
+    sid = "Scheduler"
+    actions = [
+      "scheduler:CreateSchedule",
+      "scheduler:UpdateSchedule",
+      "scheduler:DeleteSchedule",
+      "scheduler:GetSchedule",
+      "scheduler:ListSchedules",
+      "scheduler:TagResource",
+      "scheduler:UntagResource",
+      "scheduler:ListTagsForResource",
+    ]
+    resources = [
+      "*",
+    ]
+    condition {
+      test     = "StringNotEquals"
+      variable = "aws:ResourceTag/ManagedBy"
+      values   = ["bootstrap"]
+    }
+  }
+
+  statement {
     sid = "CloudWatchGlobal"
     actions = [
       "cloudwatch:ListMetrics",
@@ -227,22 +277,30 @@ data "aws_iam_policy_document" "github_policy_4" {
 
 data "aws_iam_policy_document" "github_policy_5" {
   statement {
-    sid = "SNS"
+    sid = "DynamoDBGlobal"
     actions = [
-      "sns:CreateTopic",
-      "sns:DeleteTopic",
-      "sns:GetTopicAttributes",
-      "sns:ListTopics",
-      "sns:ListTagsForResource",
-      "sns:SetTopicAttributes",
-      "sns:TagResource",
-      "sns:UntagResource",
-      "sns:Subscribe",
-      "sns:Unsubscribe",
-      "sns:ListSubscriptions",
-      "sns:ListSubscriptionsByTopic",
-      "sns:GetSubscriptionAttributes",
-      "sns:SetSubscriptionAttributes",
+      "dynamodb:ListTables",
+      "dynamodb:DescribeLimits",
+      "dynamodb:DescribeTimeToLive",
+      "dynamodb:ListTagsOfResource",
+    ]
+    resources = [
+      "*",
+    ]
+  }
+
+  statement {
+    sid = "DynamoDBTables"
+    actions = [
+      "dynamodb:CreateTable",
+      "dynamodb:DeleteTable",
+      "dynamodb:DescribeTable",
+      "dynamodb:DescribeTableReplicaAutoScaling",
+      "dynamodb:DescribeContinuousBackups",
+      "dynamodb:UpdateTable",
+      "dynamodb:UpdateTimeToLive",
+      "dynamodb:TagResource",
+      "dynamodb:UntagResource",
     ]
     resources = [
       "*",
