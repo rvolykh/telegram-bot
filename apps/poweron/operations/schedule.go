@@ -12,6 +12,12 @@ import (
 	"github.com/rvolykh/telegram-bot/apps/poweron/subscriptions"
 )
 
+const (
+	tomorrow  = "Завтра"
+	today     = "Сьогодні"
+	updatedAt = "Інформація станом на"
+)
+
 func DeliverScheduleUpdates(ctx context.Context, cfg *config.Config) error {
 	poweron := scrap.NewPoweron(cfg)
 
@@ -43,9 +49,16 @@ func DeliverScheduleUpdates(ctx context.Context, cfg *config.Config) error {
 			log.Printf("Failed to get pinned message %d: %s", subscriber.ChatID, err)
 		}
 
-		// telegram trims last \n so should we before compare
-		if prev == message[:len(message)-1] {
+		// one to one match
+		if prev.Text == message {
 			log.Printf("No updates, skipping for chat %d", subscriber.ChatID)
+			continue
+		}
+		// updatedAt change only
+		if isMessagesEqual(prev.Text, message) {
+			if err := t.EditMessage(ctx, subscriber.ChatID, prev.ID, message); err != nil {
+				log.Printf("Failed to edit message %d in chat %d: %s", prev.ID, subscriber.ChatID, err)
+			}
 			continue
 		}
 
@@ -68,13 +81,15 @@ func DeliverScheduleUpdates(ctx context.Context, cfg *config.Config) error {
 func prepareMessage(powerSchedule scrap.Schedule, groups []string) string {
 	var message strings.Builder
 
-	message.WriteString("Сьогодні:\n")
+	message.WriteString(today + ":\n")
 	filterPowerScheduleGroups(&message, powerSchedule.Today, groups)
 
-	message.WriteString("\nЗавтра:\n")
+	message.WriteString("\n" + tomorrow + ":\n")
 	filterPowerScheduleGroups(&message, powerSchedule.Tomorrow, groups)
 
-	return message.String()
+	// remove last new line as telegram will strip it anyway and it can create issue in cmp
+	result := message.String()
+	return result[:len(result)-1]
 }
 
 func filterPowerScheduleGroups(b *strings.Builder, schedule string, groups []string) {
@@ -94,4 +109,29 @@ func filterPowerScheduleGroups(b *strings.Builder, schedule string, groups []str
 
 		b.WriteString(line + "\n")
 	}
+}
+
+func isMessagesEqual(src, dst string) bool {
+	var (
+		srcLines = strings.Split(src, "\n")
+		dstLines = strings.Split(dst, "\n")
+	)
+
+	if len(srcLines) != len(dstLines) {
+		return false
+	}
+
+	for i := range srcLines {
+		if srcLines[i] == dstLines[i] {
+			continue
+		}
+
+		if strings.HasPrefix(srcLines[i], updatedAt) && strings.HasPrefix(dstLines[i], updatedAt) {
+			continue
+		}
+
+		return false
+	}
+
+	return true
 }
